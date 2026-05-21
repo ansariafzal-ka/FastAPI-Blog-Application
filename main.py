@@ -2,7 +2,7 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from src.configs.db import engine, Base
 from src.routes.blog_routes import router as blog_router
-
+from src.routes.user_routes import router as user_router
 Base.metadata.create_all(engine)
 
 app = FastAPI(title='Blog Application')
@@ -16,6 +16,7 @@ app.add_middleware(
 )
 
 app.include_router(blog_router)
+app.include_router(user_router)
 
 @app.get('/health', status_code=status.HTTP_200_OK)
 def health_check():

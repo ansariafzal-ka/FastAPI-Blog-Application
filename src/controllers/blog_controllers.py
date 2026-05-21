@@ -25,7 +25,7 @@ def get_all_blogs(db:Session, category:Optional[BlogCategory], search:Optional[s
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'Failed to get all blogs'
         )
-    
+
 def get_blog(id:int, db:Session):
     try:
         blog = db.query(BlogModel).get(id)
@@ -45,7 +45,7 @@ def get_blog(id:int, db:Session):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to get the blog'
         )
-    
+
 def create_blog(request:BlogSchema, db:Session):
     try:
         new_blog = BlogModel(
@@ -66,7 +66,7 @@ def create_blog(request:BlogSchema, db:Session):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to create the blog'
         )
-    
+
 def update_blog(id:int, request:BlogSchema, db:Session):
     try:
         blog = db.query(BlogModel).get(id)
@@ -93,7 +93,7 @@ def update_blog(id:int, request:BlogSchema, db:Session):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to update the blog'
         )
-    
+
 def delete_blog(id:int, db:Session):
     try:
         blog = db.query(BlogModel).get(id)
