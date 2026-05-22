@@ -4,6 +4,7 @@ from src.models.user_models import UserModel, UserSchema, LoginSchema
 from pwdlib import PasswordHash
 import logging
 import jwt
+from jwt.exceptions import InvalidTokenError
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -75,9 +76,8 @@ def login(request:LoginSchema, db:Session):
                 detail='Invalid Credentials...'
             ) 
         
-        exp_time = datetime.now() + timedelta(minutes=EXP_TIME)
-        
-        token = jwt.encode({'_id': user.id, 'exp': exp_time}, SECRET_KEY, ALGORITHM)
+        exp_time = datetime.now() + timedelta(minutes=int(EXP_TIME))
+        token = jwt.encode({'_id': user.id, 'exp_time': exp_time.timestamp()}, SECRET_KEY, ALGORITHM)
 
         return {'token': token}
 
@@ -88,7 +88,41 @@ def login(request:LoginSchema, db:Session):
             detail='Failed to login user.'
         )
     
-def delete_user(id:int, db:Session):
+def is_authenticated(request:Request, db:Session):
+    try:
+        auth_header = request.headers.get('authorization')
+        token = auth_header.split(' ')[-1]
+
+        data = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        user_id = data.get('_id')
+        exp_time = data.get('exp_time')
+
+        current_time = datetime.now().timestamp()
+        if current_time > exp_time:
+            logger.error('You are unauthorized')
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='You are unauthorized'
+            )
+        
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
+
+        if not user:
+            logger.error('You are unauthorized')
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='You are unauthorized'
+            )
+
+        return user
+    
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='You are unauthorized.'
+        )
+
+def delete_user(id:int, db:Session, current_user:UserModel):
     try:
         user = db.query(UserModel).get(id)
         if not user:
@@ -97,6 +131,12 @@ def delete_user(id:int, db:Session):
                 detail='User not found'
             )
         
+        if user.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='You are not authorized to delete this user'
+            )
+
         db.delete(user)
         db.commit()
 
